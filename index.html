@@ -37,21 +37,23 @@
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
       display:flex;align-items:center;justify-content:center;padding:24px;
+      overflow:hidden; /* remove vertical scroll on the page */
     }
     .app{
       width:100%;max-width:1300px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
       border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.45);backdrop-filter:blur(6px);
-      display:grid;grid-template-columns:1fr minmax(280px,360px);gap:18px;overflow:hidden;
+      display:grid;grid-template-columns:1fr minmax(280px,360px);grid-template-rows:auto 1fr;gap:18px;overflow:hidden;
+      height:calc(100vh - 48px); /* fixed app height so content doesn't push page */
     }
     @media (max-width:900px){.app{grid-template-columns:1fr;}}
 
     /* Left: Main display */
     .main{
-      display:flex;flex-direction:column;gap:18px;padding:18px;background:var(--card-bg);border-radius:12px;
+      display:flex;flex-direction:column;gap:18px;padding:18px;background:var(--card-bg);border-radius:12px;overflow:auto;
     }
-    .display-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;border-radius:12px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0));min-height:220px}
+    .display-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;border-radius:12px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0));min-height:120px;flex:0 0 auto}
     .big-number{
-      font-weight:800;color:var(--accent);font-size:clamp(48px,10vw,140px);line-height:1;text-align:center;display:flex;align-items:center;justify-content:center;min-height:110px;max-width:100%;
+      font-weight:800;color:var(--accent);font-size:clamp(48px,10vw,140px);line-height:1;text-align:center;display:flex;align-items:center;justify-content:center;min-height:80px;max-width:100%;
       transform:translateZ(0) scale(1);opacity:1;transition:transform .36s cubic-bezier(.2,.9,.2,1),opacity .28s,filter .2s;word-break:break-word;
       text-shadow:0 6px 18px rgba(3,16,32,0.08);
     }
@@ -76,13 +78,13 @@
     button.btn:disabled{opacity:.45;cursor:not-allowed}
 
     .right{
-      padding:14px;background:linear-gradient(180deg,transparent,transparent);border-radius:12px;display:flex;flex-direction:column;gap:12px;min-width:220px
+      padding:14px;background:linear-gradient(180deg,transparent,transparent);border-radius:12px;display:flex;flex-direction:column;gap:12px;min-width:220px;overflow:auto
     }
     .legend{display:flex;align-items:center;gap:8px}
     .chip{padding:6px 10px;border-radius:999px;background:var(--glass);font-weight:700;color:var(--muted);}
 
     .grid{
-      display:grid;grid-template-columns:repeat(15,1fr);gap:8px;padding:12px;background:transparent;border-radius:10px;align-items:center;justify-items:center;overflow:auto
+      display:grid;grid-template-columns:repeat(15,1fr);gap:8px;padding:12px;background:transparent;border-radius:10px;align-items:center;justify-items:center;overflow:auto;max-height:100%
     }
     /* Cabeçalho B I N G O (5 colunas) */
     .grid-header{
@@ -149,11 +151,12 @@
     @media (max-width:520px){
       body{padding:12px}
       body{align-items:flex-start}
-      .app{padding:12px;overflow:visible}
+      /* make app scroll internally on small screens so content never gets cut */
+      .app{padding:12px;overflow:auto;max-height:calc(100vh - 24px)}
       .main{padding:12px}
       .right{padding:10px;min-width:unset}
-      .display-area{min-height:160px;padding:12px 10px}
-      .big-number{min-height:96px;word-break:break-word;font-size:clamp(34px,12vw,88px)}
+      .display-area{min-height:110px;padding:10px 8px}
+      .big-number{min-height:56px;word-break:break-word;font-size:clamp(26px,10vw,64px)}
       .grid{gap:6px;padding:8px}
       .cell{width:min(60px,14vw);height:min(60px,14vw);font-size:14px}
     }
@@ -163,12 +166,18 @@
       :root{--cell-size: min(86px,6vw)}
       .grid{gap:10px}
       .big-number{font-size:clamp(80px,10vw,220px)}
+      .display-area{height:220px}
       .right{max-height:calc(100vh - 120px);overflow:auto;padding:18px}
     }
     @media (min-width:1600px){
       :root{--cell-size:92px}
       .big-number{font-size:clamp(100px,8vw,260px)}
     }
+    /* grid-area spans full width and provides its own internal scroll (prevents page Y scroll) */
+    .grid-area{grid-column:1/-1;overflow:auto;padding:8px 0 4px}
+    .grid-area .grid{max-height:100%;overflow:auto;padding:10px;border-radius:12px;background:var(--card-bg)}
+    /* keep drawn list fixed height to avoid pushing layout */
+    .drawn-list{max-height:120px;overflow:auto}
     
     /* focus state */
     .cell:focus{box-shadow:0 0 0 3px rgba(29,155,240,0.18);outline:none}
