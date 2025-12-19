@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bingo — Sorteador 1–75</title>
+  <style>
+    :root{
+      /* Paleta fornecida pelo usuário (principalmente tons de azul/preto) */
+      --p1: #1c31a5;
+      --p2: #101f78;
+      --p3: #020f59;
+      --p4: #010937;
+      --p5: #000524;
+
+      --bg1: var(--p4);
+      --bg2: var(--p5);
+      --panel: var(--p3);
+      --accent: var(--p1);
+      --muted: #9aa8b6;
+      --marked: var(--p2);
+      --card-bg: rgba(255,255,255,0.02);
+      --glass: rgba(255,255,255,0.03);
+      --surface: var(--p3);
+      --text: #e6eef7;
+      --rounded:14px;
+      --btn-bg: linear-gradient(180deg,var(--p1),var(--p2));
+      --btn-fg: #ffffff;
+      --cell-size: min(64px,8vw);
+    }
+
+    /* Light theme keeps contrast but uses same blue palette accents */
+    [data-theme="light"]{
+      --bg1:#f6fbff;
+      --bg2:#e9f4ff;
+      --panel:#ffffff;
+      --accent: var(--p1);
+      --muted:#345068;
+      --marked: var(--p2);
+      --card-bg:rgba(6,32,61,0.03);
+      --glass:rgba(6,32,61,0.04);
+      --surface:#ffffff;
+      --text:#031026;
+      --btn-bg:linear-gradient(180deg,var(--p1),var(--p2));
+      --btn-fg:#ffffff;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,"Helvetica Neue",Arial}
+    body{
+      background:linear-gradient(135deg,var(--bg1),var(--bg2));
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;align-items:center;justify-content:center;padding:24px;
+    }
+    .app{
+      width:100%;max-width:1300px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
+      border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.45);backdrop-filter:blur(6px);
+      display:grid;grid-template-columns:1fr minmax(280px,360px);gap:18px;overflow:hidden;
+    }
+    @media (max-width:900px){.app{grid-template-columns:1fr;}}
+
+    /* Left: Main display */
+    .main{
+      display:flex;flex-direction:column;gap:18px;padding:18px;background:var(--card-bg);border-radius:12px;
+    }
+    .display-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;border-radius:12px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0));min-height:220px}
+    .big-number{
+      font-weight:800;color:var(--accent);font-size:clamp(64px,12vw,140px);line-height:1;text-align:center;display:flex;align-items:center;justify-content:center;min-height:110px;
+      transform:translateZ(0) scale(1);opacity:1;transition:transform .36s cubic-bezier(.2,.9,.2,1),opacity .28s,filter .2s;
+      text-shadow:0 6px 18px rgba(3,16,32,0.45);
+    }
+    .big-number.hidden{opacity:0;transform:scale(.9)}
+    .big-number.small{font-size:clamp(48px,18vw,90px)}
+    .subtext{color:var(--muted);font-size:13px;margin-top:6px}
+
+    .controls{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+    @media (max-width:520px){
+      .controls{flex-direction:column;align-items:stretch}
+      .controls .btn{width:100%;display:block}
+      .controls .btn.secondary{width:100%}
+    }
+    button.btn{
+      appearance:none;border:0;padding:10px 16px;border-radius:10px;font-weight:700;letter-spacing:.6px;cursor:pointer;
+      background:var(--btn-bg);color:var(--btn-fg);box-shadow:0 8px 20px rgba(2,6,23,0.35);
+    }
+    button.btn.secondary{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04);box-shadow:none}
+    button.icon{
+      padding:9px 10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted);display:inline-flex;align-items:center;gap:8px
+    }
+    button.btn:disabled{opacity:.45;cursor:not-allowed}
+
+    .right{
+      padding:14px;background:linear-gradient(180deg,transparent,transparent);border-radius:12px;display:flex;flex-direction:column;gap:12px;min-width:220px
+    }
+    .legend{display:flex;align-items:center;gap:8px}
+    .chip{padding:6px 10px;border-radius:999px;background:var(--glass);font-weight:700;color:var(--muted);}
+
+    .grid{
+      display:grid;grid-template-columns:repeat(15,1fr);gap:8px;padding:12px;background:transparent;border-radius:10px;align-items:center;justify-items:center;overflow:auto
+    }
+    /* Cabeçalho B I N G O (5 colunas) */
+    .grid-header{
+      display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:6px 12px 8px;align-items:center;justify-items:center;margin-bottom:6px
+    }
+    .col-letter{font-weight:900;font-size:18px;display:flex;align-items:center;justify-content:center;height:44px;width:52px;border-radius:10px;color:#fff}
+    /* cores especificadas: B azul bebê, I verde, N amarelo, G azul escuro, O vermelho */
+    .col-letter.b{background:#0284C7;color:#ffffff}
+    .col-letter.i{background:#059669;color:#ffffff}
+    .col-letter.n{background:#CA8A04;color:#ffffff}
+    .col-letter.g{background:#2563EB;color:#ffffff}
+    .col-letter.o{background:#E11D48;color:#ffffff}
+    @media (max-width:600px){.grid-header{grid-template-columns:repeat(5,1fr)} .col-letter{font-size:16px;height:40px;width:44px;border-radius:8px}}
+    @media (max-width:1100px){.grid{grid-template-columns:repeat(12,1fr)}}
+    @media (max-width:900px){.grid{grid-template-columns:repeat(9,1fr);gap:6px}}
+    @media (max-width:600px){.grid{grid-template-columns:repeat(5,1fr);gap:6px}}
+    .cell{
+      width:var(--cell-size);height:var(--cell-size);display:flex;align-items:center;justify-content:center;border-radius:8px;background:transparent;color:var(--muted);font-weight:800;user-select:none;transition:transform .2s,background .25s,color .2s,box-shadow .2s;
+      -webkit-tap-highlight-color: transparent;touch-action: manipulation;outline: none;border:0;background-clip:padding-box;flex:0 0 auto;
+    }
+    .cell:active{transform:scale(.98)}
+    /* marcado usa cor fixa da paleta para manter aparência idêntica em ambos os temas */
+    .cell.marked{background:linear-gradient(180deg,#1c31a5,#101f78);color:#ffffff;transform:scale(1.04);box-shadow:0 8px 22px rgba(12,28,72,0.65)}
+    .cell.blink{animation:blink .8s ease-in-out 2}
+    @keyframes blink{0%{box-shadow:0 0 0 rgba(255,255,255,0)}50%{box-shadow:0 0 18px rgba(255,204,0,0.75)}100%{box-shadow:0 0 0 rgba(255,255,255,0)}}
+
+    .drawn-list{display:flex;flex-wrap:wrap;gap:8px;max-height:170px;overflow:auto;padding:6px}
+    .pill{background:linear-gradient(90deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:6px 8px;border-radius:8px;color:var(--muted);font-weight:700}
+
+    .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+
+    /* message overlay when finished */
+    .overlay{
+      position:fixed;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:60
+    }
+    .msg{
+      background:linear-gradient(90deg,rgba(3,16,32,0.85),rgba(5,24,40,0.7));color:var(--accent);padding:14px 22px;border-radius:12px;font-weight:800;letter-spacing:.6px;box-shadow:0 12px 40px rgba(0,0,0,0.6);transform:translateY(-10px);opacity:0;transition:all .28s
+    }
+    .msg.show{transform:translateY(0);opacity:1;pointer-events:auto}
+
+    /* Ajuste específico: no modo claro em telas pequenas, mostrar como toast inferior legível */
+    @media (max-width:520px){
+      [data-theme="light"] .overlay{pointer-events:none}
+      [data-theme="light"] .overlay .msg{
+        position:fixed;left:16px;right:16px;bottom:16px;top:auto;margin:0 auto;z-index:120;
+        background:#ffffff;color:var(--p2);padding:12px 16px;border-radius:12px;box-shadow:0 10px 30px rgba(16,31,120,0.08);
+        transform:translateY(10px);opacity:0;transition:transform .28s,opacity .28s;
+        text-align:center;font-weight:800;letter-spacing:.4px;
+      }
+      [data-theme="light"] .overlay .msg.show{transform:translateY(0);opacity:1;pointer-events:auto}
+    }
+
+    footer.note{font-size:12px;color:var(--muted);text-align:center;padding-top:8px}
+
+    /* mobile-specific adjustments */
+    @media (max-width:520px){
+      body{padding:12px}
+      body{align-items:flex-start}
+      .app{padding:12px}
+      .main{padding:12px}
+      .right{padding:10px;min-width:unset}
+      .big-number{min-height:80px}
+      .grid{gap:6px;padding:8px}
+      .cell{width:min(60px,16vw);height:min(60px,16vw);font-size:14px}
+    }
+    /* Desktop / large screens adjustments */
+    @media (min-width:1200px){
+      .app{max-width:1400px;grid-template-columns:1fr 380px}
+      :root{--cell-size: min(86px,6vw)}
+      .grid{gap:10px}
+      .big-number{font-size:clamp(80px,10vw,220px)}
+      .right{max-height:calc(100vh - 120px);overflow:auto;padding:18px}
+    }
+    @media (min-width:1600px){
+      :root{--cell-size:92px}
+      .big-number{font-size:clamp(100px,8vw,260px)}
+    }
+    
+    /* focus state */
+    .cell:focus{box-shadow:0 0 0 3px rgba(29,155,240,0.18);outline:none}
+    button.btn:focus{outline:none;box-shadow:0 8px 20px rgba(13,110,214,0.18)}
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="main">
+      <div class="display-area">
+        <div id="bigNumber" class="big-number hidden">&mdash;</div>
+        <div id="subtext" class="subtext">Clique em <strong>Sortear Número</strong></div>
+      </div>
+
+      <div class="controls">
+        <button id="drawBtn" class="btn">Sortear Número</button>
+        <button id="resetBtn" class="btn secondary">Reiniciar Bingo</button>
+        <button id="themeToggle" class="btn secondary" aria-pressed="false">Tema: Dark</button>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="status"><span class="chip">Total</span><span style="font-weight:800;margin-left:8px">75</span></div>
+        <div class="status"><span class="chip">Sorteados</span><span id="count" style="font-weight:800;margin-left:8px">0</span></div>
+        <div class="status"><span class="chip">Restantes</span><span id="remaining" style="font-weight:800;margin-left:8px">75</span></div>
+      </div>
+
+      <div style="margin-top:6px">
+        <div class="drawn-list" id="drawnList" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <aside class="right">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;flex-direction:column">
+        </div>
+        <div class="legend">
+        </div>
+      </div>
+
+      <div class="grid-header" aria-hidden="true">
+        <div class="col-letter b">B</div>
+        <div class="col-letter i">I</div>
+        <div class="col-letter n">N</div>
+        <div class="col-letter g">G</div>
+        <div class="col-letter o">O</div>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+      <div style="font-size:13px;color:var(--muted);text-align:center;padding-top:6px">Sorteio de bingo com 75 números.</div>
+    </aside>
+  </div>
+
+  <div class="overlay">
+    <div id="finishMsg" class="msg">Todos os números já foram sorteados</div>
+  </div>
+
+  <script>
+    // Bingo single-file app
+    // Author: gerado por assistente — Código comentado
+
+    // Elements
+    const drawBtn = document.getElementById('drawBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const themeToggle = document.getElementById('themeToggle');
+    const bigNumber = document.getElementById('bigNumber');
+    const subtext = document.getElementById('subtext');
+    const countEl = document.getElementById('count');
+    const remainingEl = document.getElementById('remaining');
+    const gridEl = document.getElementById('grid');
+    const drawnListEl = document.getElementById('drawnList');
+    const finishMsg = document.getElementById('finishMsg');
+
+    // State
+    let remaining = []; // numbers left to draw
+    let drawn = [];     // numbers drawn so far
+
+    // Initialization: prepare numbers 1..75 and render grid
+    function init(){
+      remaining = Array.from({length:75},(_,i)=>i+1);
+      drawn = [];
+      renderGrid();
+      updateCounters();
+      bigNumber.classList.add('hidden');
+      bigNumber.textContent = '—';
+      subtext.textContent = 'Clique em "Sortear Número"';
+      drawBtn.disabled = false;
+      finishMsg.classList.remove('show');
+      drawnListEl.innerHTML = '';
+    }
+
+    // Render grid of 1..75 (use button elements for better mobile/touch behavior)
+    function renderGrid(){
+      gridEl.innerHTML = '';
+      for(let i=1;i<=75;i++){
+        const c = document.createElement('button');
+        c.type = 'button';
+        c.className = 'cell';
+        c.textContent = i;
+        c.id = 'cell-'+i;
+        c.setAttribute('aria-label', 'Número '+i);
+        // prevent accidental focus outlines on mobile
+        c.addEventListener('touchstart', ()=>{});
+        gridEl.appendChild(c);
+      }
+    }
+
+    // Theme handling (persist in localStorage)
+    function applyTheme(theme){
+      const t = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : '');
+      if(themeToggle){
+        themeToggle.setAttribute('aria-pressed', t === 'light' ? 'true' : 'false');
+        themeToggle.textContent = t === 'light' ? 'Tema: Light' : 'Tema: Dark';
+      }
+      try{ localStorage.setItem('bingoTheme', t); }catch(e){}
+    }
+    function initTheme(){
+      let saved = null;
+      try{ saved = localStorage.getItem('bingoTheme'); }catch(e){}
+      const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      const theme = saved || (prefersLight ? 'light' : 'dark');
+      applyTheme(theme);
+    }
+
+    // Update counters in UI
+    function updateCounters(){
+      countEl.textContent = drawn.length;
+      remainingEl.textContent = remaining.length;
+    }
+
+    // Render the drawn list in the order numbers were drawn (first drawn appears first)
+    function renderDrawnList(){
+      drawnListEl.innerHTML = '';
+      for(const n of drawn){
+        const pill = document.createElement('div');
+        pill.className = 'pill';
+        pill.textContent = n;
+        drawnListEl.appendChild(pill);
+      }
+    }
+
+    // Pick a random number from remaining (without repeat)
+    function pickRandom(){
+      if(remaining.length===0) return null;
+      const i = Math.floor(Math.random()*remaining.length);
+      const num = remaining.splice(i,1)[0]; // remove from remaining
+      drawn.push(num);
+      return num;
+    }
+
+    // Show number with animation and visual updates
+    function showNumber(num){
+      // Update big number with scale/fade animation
+      bigNumber.classList.remove('hidden');
+      bigNumber.classList.remove('small');
+      bigNumber.style.transition = 'none';
+      bigNumber.style.transform = 'scale(0.7)';
+      bigNumber.style.opacity = '0';
+      requestAnimationFrame(()=>{
+        bigNumber.textContent = num;
+        bigNumber.style.transition = '';
+        bigNumber.style.transform = '';
+        bigNumber.style.opacity = '';
+        // Slight responsive size change for large devices
+        if(window.innerWidth < 420) bigNumber.classList.add('small');
+      });
+
+      // Update the drawn list (display in ascending order)
+      renderDrawnList();
+
+      // Update grid cell
+      const cell = document.getElementById('cell-'+num);
+      if(cell){
+        cell.classList.add('marked');
+        // Add temporary blink highlight
+        cell.classList.add('blink');
+        setTimeout(()=>cell.classList.remove('blink'),900);
+      }
+
+      updateCounters();
+
+      // Play a short sound
+      playBeep();
+
+      // If finished
+      if(remaining.length===0){
+        drawBtn.disabled = true;
+        finishMsg.classList.add('show');
+        subtext.textContent = 'Todos os números foram sorteados.';
+      } else {
+        subtext.textContent = 'Número sorteado';
+      }
+    }
+
+    // Button handlers
+    drawBtn.addEventListener('click',()=>{
+      const num = pickRandom();
+      if(num===null) return;
+      showNumber(num);
+    });
+
+    resetBtn.addEventListener('click',()=>{
+      init();
+    });
+
+    // Theme toggle handler
+    if(themeToggle){
+      themeToggle.addEventListener('click',()=>{
+        const current = (document.documentElement.getAttribute('data-theme') === 'light') ? 'light' : 'dark';
+        const next = current === 'light' ? 'dark' : 'light';
+        applyTheme(next);
+      });
+    }
+
+    // Short beep using WebAudio API — no external files
+    function playBeep(){
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 520 + Math.random()*160; // slightly random pitch
+        g.gain.value = 0.0001;
+        o.connect(g);g.connect(ctx.destination);
+        const now = ctx.currentTime;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.08, now+0.01);
+        o.start(now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+0.35);
+        o.stop(now+0.36);
+        // Close context after a short delay to free resources
+        setTimeout(()=>{try{ctx.close();}catch(e){}},500);
+      }catch(e){ /* ignore if audio not allowed */ }
+    }
+
+    // Init theme and UI on load
+    initTheme();
+    init();
+
+    // Expose some helpers for debugging (optional)
+    window._bingo = {init, pickRandom}
+  </script>
+</body>
+</html>
