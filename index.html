@@ -6,31 +6,14 @@
   <title>Bingo — Sorteador 1–75</title>
   <style>
     :root{
-      /* Paleta fornecida pelo usuário (principalmente tons de azul/preto) */
+      /* Paleta (cores base) e tema claro único */
       --p1: #1c31a5;
       --p2: #101f78;
       --p3: #020f59;
       --p4: #010937;
       --p5: #000524;
 
-      --bg1: var(--p4);
-      --bg2: var(--p5);
-      --panel: var(--p3);
-      --accent: var(--p1);
-      --muted: #9aa8b6;
-      --marked: var(--p2);
-      --card-bg: rgba(255,255,255,0.02);
-      --glass: rgba(255,255,255,0.03);
-      --surface: var(--p3);
-      --text: #e6eef7;
-      --rounded:14px;
-      --btn-bg: linear-gradient(180deg,var(--p1),var(--p2));
-      --btn-fg: #ffffff;
-      --cell-size: min(64px,8vw);
-    }
-
-    /* Light theme keeps contrast but uses same blue palette accents */
-    [data-theme="light"]{
+      /* Tema claro (apenas) */
       --bg1:#f6fbff;
       --bg2:#e9f4ff;
       --panel:#ffffff;
@@ -41,8 +24,10 @@
       --glass:rgba(6,32,61,0.04);
       --surface:#ffffff;
       --text:#031026;
+      --rounded:14px;
       --btn-bg:linear-gradient(180deg,var(--p1),var(--p2));
       --btn-fg:#ffffff;
+      --cell-size: min(64px,8vw);
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,"Helvetica Neue",Arial}
@@ -66,12 +51,12 @@
     }
     .display-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;border-radius:12px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0));min-height:220px}
     .big-number{
-      font-weight:800;color:var(--accent);font-size:clamp(64px,12vw,140px);line-height:1;text-align:center;display:flex;align-items:center;justify-content:center;min-height:110px;
-      transform:translateZ(0) scale(1);opacity:1;transition:transform .36s cubic-bezier(.2,.9,.2,1),opacity .28s,filter .2s;
-      text-shadow:0 6px 18px rgba(3,16,32,0.45);
+      font-weight:800;color:var(--accent);font-size:clamp(48px,10vw,140px);line-height:1;text-align:center;display:flex;align-items:center;justify-content:center;min-height:110px;max-width:100%;
+      transform:translateZ(0) scale(1);opacity:1;transition:transform .36s cubic-bezier(.2,.9,.2,1),opacity .28s,filter .2s;word-break:break-word;
+      text-shadow:0 6px 18px rgba(3,16,32,0.08);
     }
     .big-number.hidden{opacity:0;transform:scale(.9)}
-    .big-number.small{font-size:clamp(48px,18vw,90px)}
+    .big-number.small{font-size:clamp(36px,12vw,90px)}
     .subtext{color:var(--muted);font-size:13px;margin-top:6px}
 
     .controls{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
@@ -110,7 +95,15 @@
     .col-letter.n{background:#CA8A04;color:#ffffff}
     .col-letter.g{background:#2563EB;color:#ffffff}
     .col-letter.o{background:#E11D48;color:#ffffff}
-    @media (max-width:600px){.grid-header{grid-template-columns:repeat(5,1fr)} .col-letter{font-size:16px;height:40px;width:44px;border-radius:8px}}
+    @media (max-width:600px){
+  .grid{
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
     @media (max-width:1100px){.grid{grid-template-columns:repeat(12,1fr)}}
     @media (max-width:900px){.grid{grid-template-columns:repeat(9,1fr);gap:6px}}
     @media (max-width:600px){.grid{grid-template-columns:repeat(5,1fr);gap:6px}}
@@ -138,16 +131,16 @@
     }
     .msg.show{transform:translateY(0);opacity:1;pointer-events:auto}
 
-    /* Ajuste específico: no modo claro em telas pequenas, mostrar como toast inferior legível */
+    /* Ajuste específico em telas pequenas: mostrar o toast inferior legível */
     @media (max-width:520px){
-      [data-theme="light"] .overlay{pointer-events:none}
-      [data-theme="light"] .overlay .msg{
+      .overlay{pointer-events:none}
+      .overlay .msg{
         position:fixed;left:16px;right:16px;bottom:16px;top:auto;margin:0 auto;z-index:120;
         background:#ffffff;color:var(--p2);padding:12px 16px;border-radius:12px;box-shadow:0 10px 30px rgba(16,31,120,0.08);
         transform:translateY(10px);opacity:0;transition:transform .28s,opacity .28s;
         text-align:center;font-weight:800;letter-spacing:.4px;
       }
-      [data-theme="light"] .overlay .msg.show{transform:translateY(0);opacity:1;pointer-events:auto}
+      .overlay .msg.show{transform:translateY(0);opacity:1;pointer-events:auto}
     }
 
     footer.note{font-size:12px;color:var(--muted);text-align:center;padding-top:8px}
@@ -159,15 +152,10 @@
       .app{padding:12px;overflow:visible}
       .main{padding:12px}
       .right{padding:10px;min-width:unset}
-      .display-area{min-height:140px;padding:10px 8px}
-      .big-number{min-height:80px;word-break:break-word}
+      .display-area{min-height:160px;padding:12px 10px}
+      .big-number{min-height:96px;word-break:break-word;font-size:clamp(34px,12vw,88px)}
       .grid{gap:6px;padding:8px}
-      .cell{width:min(60px,16vw);height:min(60px,16vw);font-size:14px}
-      /* reduce big number font-size on very small screens to avoid clipping */
-      @media (max-width:380px){
-        .big-number{font-size:clamp(40px,12vw,86px)}
-        .display-area{min-height:120px}
-      }
+      .cell{width:min(60px,14vw);height:min(60px,14vw);font-size:14px}
     }
     /* Desktop / large screens adjustments */
     @media (min-width:1200px){
@@ -199,7 +187,6 @@
       <div class="controls">
         <button id="drawBtn" class="btn">Sortear Número</button>
         <button id="resetBtn" class="btn secondary">Reiniciar Bingo</button>
-        <button id="themeToggle" class="btn secondary" aria-pressed="false">Tema: Dark</button>
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
@@ -246,7 +233,6 @@
     // Elements
     const drawBtn = document.getElementById('drawBtn');
     const resetBtn = document.getElementById('resetBtn');
-    const themeToggle = document.getElementById('themeToggle');
     const bigNumber = document.getElementById('bigNumber');
     const subtext = document.getElementById('subtext');
     const countEl = document.getElementById('count');
@@ -289,23 +275,7 @@
       }
     }
 
-    // Theme handling (persist in localStorage)
-    function applyTheme(theme){
-      const t = theme === 'light' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : '');
-      if(themeToggle){
-        themeToggle.setAttribute('aria-pressed', t === 'light' ? 'true' : 'false');
-        themeToggle.textContent = t === 'light' ? 'Tema: Light' : 'Tema: Dark';
-      }
-      try{ localStorage.setItem('bingoTheme', t); }catch(e){}
-    }
-    function initTheme(){
-      let saved = null;
-      try{ saved = localStorage.getItem('bingoTheme'); }catch(e){}
-      const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-      const theme = saved || (prefersLight ? 'light' : 'dark');
-      applyTheme(theme);
-    }
+    // Theme handling removed — only light theme is used now
 
     // Update counters in UI
     function updateCounters(){
@@ -388,14 +358,7 @@
       init();
     });
 
-    // Theme toggle handler
-    if(themeToggle){
-      themeToggle.addEventListener('click',()=>{
-        const current = (document.documentElement.getAttribute('data-theme') === 'light') ? 'light' : 'dark';
-        const next = current === 'light' ? 'dark' : 'light';
-        applyTheme(next);
-      });
-    }
+    // Theme toggle removed.
 
     // Short beep using WebAudio API — no external files
     function playBeep(){
@@ -418,8 +381,7 @@
       }catch(e){ /* ignore if audio not allowed */ }
     }
 
-    // Init theme and UI on load
-    initTheme();
+    // Init UI on load
     init();
 
     // Expose some helpers for debugging (optional)
