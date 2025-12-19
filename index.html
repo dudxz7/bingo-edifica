@@ -156,12 +156,18 @@
     @media (max-width:520px){
       body{padding:12px}
       body{align-items:flex-start}
-      .app{padding:12px}
+      .app{padding:12px;overflow:visible}
       .main{padding:12px}
       .right{padding:10px;min-width:unset}
-      .big-number{min-height:80px}
+      .display-area{min-height:140px;padding:10px 8px}
+      .big-number{min-height:80px;word-break:break-word}
       .grid{gap:6px;padding:8px}
       .cell{width:min(60px,16vw);height:min(60px,16vw);font-size:14px}
+      /* reduce big number font-size on very small screens to avoid clipping */
+      @media (max-width:380px){
+        .big-number{font-size:clamp(40px,12vw,86px)}
+        .display-area{min-height:120px}
+      }
     }
     /* Desktop / large screens adjustments */
     @media (min-width:1200px){
